@@ -79,7 +79,7 @@ mirror:
         minVersion: 1.0.2
         maxVersion: 1.2.2
     - name: serverless-operator
-      defaultChannel: stable
+      defaultChannel: stable-1.37
       channels:
       - name: stable-1.37
         minVersion: 1.35.0
