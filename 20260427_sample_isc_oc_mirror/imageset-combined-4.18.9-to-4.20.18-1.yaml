@@ -10,16 +10,16 @@ mirror:
     - name: stable-4.18
       type: ocp
       minVersion: 4.18.9
-      maxVersion: 4.18.36
+      maxVersion: 4.18.38
       shortestPath: true
     - name: stable-4.19
       type: ocp
-      minVersion: 4.19.27
-      maxVersion: 4.19.27
+      minVersion: 4.19.28
+      maxVersion: 4.19.28
     - name: stable-4.20
       type: ocp
-      minVersion: 4.20.18
-      maxVersion: 4.20.18
+      minVersion: 4.20.19
+      maxVersion: 4.20.19
     graph: true
   operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
