@@ -1,70 +1,78 @@
 #!/bin/bash
 
 # --- Paths ---
-# Git Repo Directories
 REPO_BASE="/home/ssm-user/bau-oc-mirror-related"
 INBOX_DIR="${REPO_BASE}/inbox"
 ARCHIVE_DIR="${REPO_BASE}/archive"
 
-# EBS Volume Storage (4TB)
 BASE_STORAGE="/mnt/mirror-data"
 WORKSPACE="${BASE_STORAGE}/workspace"
 CACHE_DIR="${BASE_STORAGE}/.cache"
 DEST_DIR="${BASE_STORAGE}/output"
 
-# Metadata & Naming
 DATE_SUFFIX=$(date +%Y%m%d)
 
-# Create directories if they don't exist
+# Ensure directories exist
 mkdir -p "$INBOX_DIR" "$ARCHIVE_DIR" "$WORKSPACE" "$DEST_DIR" "$CACHE_DIR"
 
-# Check if there are any yaml files to process
 shopt -s nullglob
 files=("$INBOX_DIR"/*.yaml)
 
 if [ ${#files[@]} -eq 0 ]; then
-    echo "No new ISC files found in $INBOX_DIR. Exiting."
+    echo "No files in $INBOX_DIR. Standing by..."
     exit 0
 fi
 
 for isc_path in "${files[@]}"; do
     isc_file=$(basename "$isc_path")
     BASE_NAME=$(basename "$isc_file" .yaml)
+    
+    # We will create a unique temporary directory for this specific run
+    TMP_WORK_DIR="${DEST_DIR}/${BASE_NAME}_tmp_${DATE_SUFFIX}"
+    mkdir -p "$TMP_WORK_DIR"
+    
     TARGET_TARBALL="${DEST_DIR}/${BASE_NAME}-${DATE_SUFFIX}.tar"
     
     echo "=========================================================="
-    echo "PROCESSING NEW ISC: $isc_file"
+    echo "STARTING: $isc_file"
+    echo "TEMP DIR: $TMP_WORK_DIR"
     echo "=========================================================="
 
-    # Run oc-mirror v2
-    # Workspace persists on EBS so future runs of the same filename are incremental
+    # Run oc-mirror
+    # We point oc-mirror to the TMP_WORK_DIR directly
     oc-mirror --config "$isc_path" \
               --cache-dir "$CACHE_DIR" \
               --workspace "file://${WORKSPACE}/${BASE_NAME}" \
-              "file://${DEST_DIR}/${BASE_NAME}_tmp" \
+              "file://${TMP_WORK_DIR}" \
               --v2
 
-    # Check for the generated tarball
-    GENERIC_TAR=$(find "${DEST_DIR}/${BASE_NAME}_tmp" -name "mirror_seq*.tar" | head -n 1)
+    # Debug: List what was actually created if it fails
+    echo "Scanning for generated tarball..."
+    
+    # Search recursively for any .tar file inside the temp work dir
+    GENERIC_TAR=$(find "$TMP_WORK_DIR" -type f -name "mirror_seq*.tar" | head -n 1)
 
-    if [ -f "$GENERIC_TAR" ]; then
-        # 1. Finalize the Tarball on EBS
+    if [ -n "$GENERIC_TAR" ] && [ -f "$GENERIC_TAR" ]; then
+        echo "Found tarball: $GENERIC_TAR"
+        
+        # 1. Move and rename
         mv "$GENERIC_TAR" "$TARGET_TARBALL"
+        
+        # 2. Checksum
+        echo "Generating SHA256..."
         sha256sum "$TARGET_TARBALL" > "${TARGET_TARBALL}.sha256"
         
-        # 2. Archive the ISC YAML in Git
-        # We append the date to the archived YAML to keep a history of what ran when
+        # 3. Archive the ISC
         mv "$isc_path" "${ARCHIVE_DIR}/${BASE_NAME}-${DATE_SUFFIX}.yaml"
         
-        # 3. Cleanup temp folder
-        rm -rf "${DEST_DIR}/${BASE_NAME}_tmp"
+        # 4. Clean up the temp dir
+        rm -rf "$TMP_WORK_DIR"
         
-        echo "SUCCESS: Tarball created at $TARGET_TARBALL"
-        echo "SUCCESS: ISC moved to $ARCHIVE_DIR"
+        echo "SUCCESS: Created $TARGET_TARBALL"
     else
-        echo "FAILED: Mirroring failed for $isc_file. Leaving in inbox for retry."
+        echo "ERROR: oc-mirror finished but no mirror_seq*.tar was found in $TMP_WORK_DIR"
+        echo "Contents of temp dir for debugging:"
+        ls -R "$TMP_WORK_DIR"
+        # We don't delete the folder here so you can inspect what went wrong
     fi
 done
-
-echo "=========================================================="
-echo "Run complete. Remember to commit your archived YAMLs to Git."
