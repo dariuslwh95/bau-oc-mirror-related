@@ -1,0 +1,17 @@
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 10
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.20
+    packages:
+    - name: gpu-operator-certified
+      channels:
+      - name: v26.3
+    - name: nginx-ingress-operator
+      channels:
+      - name: alpha
+    - name: nutanixcsioperator
+      channels:
+      - name: stable-3.x
+

@@ -1,0 +1,67 @@
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 10
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+    packages:
+    - name: odf-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: ocs-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: ocs-client-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odf-csi-addons-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odf-prometheus-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odf-multicluster-orchestrator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odr-cluster-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odr-hub-operator
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: odf-dependencies
+      channels:
+      - name: stable-4.19
+        minVersion: 4.19.14-rhodf
+        maxVersion: 4.19.14-rhodf
+    - name: local-storage-operator
+      channels:
+      - name: stable
+        minVersion: 4.19.0-202604070811
+        maxVersion: 4.19.0-202604070811
+    - name: metallb-operator
+      channels:
+      - name: stable
+        minVersion: 4.19.0-202604072219
+        maxVersion: 4.19.0-202604072219
+    - name: nfd
+      channels:
+      - name: stable
+        minVersion: 4.19.0-202604070811
+        maxVersion: 4.19.0-202604070811
