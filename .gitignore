@@ -1,4 +1,24 @@
+*/mirror-output/
+
+# secrets
 .env
 pull-secret.txt
-*/mirror-output/
-*.md
+
+# Local .terraform folder (contains provider binaries)
+.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Sensitive variables (where you might keep secrets locally)
+*.tfvars
+*.tfvars.json
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Ignore CLI configuration
+.terraformrc
+terraform.rc
