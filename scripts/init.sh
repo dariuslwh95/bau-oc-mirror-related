@@ -24,25 +24,23 @@ if [ -z "$(lsblk -fno FSTYPE $DEVICE)" ]; then
     mkfs -t xfs $DEVICE
 fi
 
-# ... existing disk mount logic ...
-echo "=== Ensuring SSM Agent is active ==="
-if ! systemctl is-active --quiet amazon-ssm-agent; then
-    echo "Installing SSM Agent..."
-    # This works for RHEL/CentOS/AL2023
-    dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
-    systemctl enable amazon-ssm-agent
-    systemctl start amazon-ssm-agent
-fi
-
 mkdir -p $MOUNT_PATH
 mount $DEVICE $MOUNT_PATH
 echo "EBS Volume mounted at $MOUNT_PATH"
 
 # 2. Dependencies
 echo "Installing base tools..."
-dnf install -y podman git tar
+# Added 'unzip' as it is required for AWS CLI installation
+dnf install -y podman git tar unzip
 
-# 3. OpenShift Tooling
+# 3. AWS CLI Installation
+echo "Installing AWS CLI v2..."
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -q awscliv2.zip
+sudo ./aws/install
+rm -rf awscliv2.zip ./aws
+
+# 4. OpenShift Tooling
 mkdir -p /tmp/ocp-tools
 cd /tmp/ocp-tools
 
@@ -56,6 +54,16 @@ tar -xzf oc.tar.gz
 chmod +x oc-mirror oc
 sudo mv oc-mirror oc /usr/local/bin/
 
+# 5. SSM Agent Check
+echo "=== Ensuring SSM Agent is active ==="
+if ! systemctl is-active --quiet amazon-ssm-agent; then
+    echo "Installing SSM Agent..."
+    dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+    systemctl enable amazon-ssm-agent
+    systemctl start amazon-ssm-agent
+fi
+
 echo "=== Installation Complete ==="
+aws --version
 oc version client
 oc-mirror version --v2
