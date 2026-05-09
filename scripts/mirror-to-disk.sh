@@ -45,12 +45,18 @@ if [ "$MIRROR_VER" == "v2" ]; then
     mkdir -p "$CACHE_DIR"
     oc-mirror --v2 --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}"
 else
-    # v1 manages its own workspace. 
+    # v1 manages its own workspace.
     V1_WORKSPACE="${BASE_STORAGE}/.workspace-v1"
     mkdir -p "$V1_WORKSPACE"
     
     pushd "$V1_WORKSPACE" > /dev/null
-    oc-mirror --v1 --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
+    # v1 requires file:/// (three slashes) for absolute paths
+    oc-mirror --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
+    
+    # RETAIN V1 LOG: Naming convention <ISC_NAME>-<DATE>.log
+    if [ -f ".oc-mirror.log" ]; then
+        mv ".oc-mirror.log" "${DEST_DIR}/${BASE_NAME}-${DATE_SUFFIX}.log"
+    fi
     popd > /dev/null
 fi
 
@@ -60,6 +66,7 @@ if [ $STATUS -eq 0 ]; then
     echo "oc-mirror succeeded. Processing chunks..."
     
     CHUNK_COUNT=1
+    # Find all tarballs (v1: mirror_seqX.tar | v2: XXXXX.tar)
     find "$TMP_WORK_DIR" -type f -name "*.tar" | sort | while read -r FILE; do
         
         FINAL_TAR="${DEST_DIR}/${BASE_NAME}-${MIRROR_VER}-chunk${CHUNK_COUNT}.tar"
@@ -77,10 +84,16 @@ if [ $STATUS -eq 0 ]; then
     rm -rf "$TMP_WORK_DIR"
     
     echo "=========================================================="
-    echo "COMPLETE: Files ready for S3 sync"
+    echo "COMPLETE: Files and Logs ready for S3 sync"
     echo "Location: $DEST_DIR"
+    echo "Next: aws s3 sync ${BASE_STORAGE}/output-${MIRROR_VER}/ s3://YOUR-BUCKET/mirrors/output-${MIRROR_VER}/"
     echo "=========================================================="
 else
-    echo "ERROR: Mirror failed. Data preserved in $TMP_WORK_DIR"
+    # Rescue v1 log even on failure for troubleshooting
+    if [ "$MIRROR_VER" == "v1" ] && [ -f "${V1_WORKSPACE}/.oc-mirror.log" ]; then
+        cp "${V1_WORKSPACE}/.oc-mirror.log" "${DEST_DIR}/${BASE_NAME}-${DATE_SUFFIX}-FAILED.log"
+    fi
+    echo "ERROR: Mirror failed with exit code $STATUS."
+    echo "Data preserved in $TMP_WORK_DIR"
     exit $STATUS
 fi
