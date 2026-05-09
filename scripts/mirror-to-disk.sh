@@ -39,7 +39,7 @@ echo "=========================================================="
 if [ "$MIRROR_VER" == "v2" ]; then
     oc-mirror --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}" --v2
 else
-    oc-mirror --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}"
+    oc-mirror --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}" --v1
 fi
 
 STATUS=$?
