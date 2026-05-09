@@ -43,14 +43,14 @@ if [ "$MIRROR_VER" == "v2" ]; then
     # v2 uses the explicit --cache-dir flag
     CACHE_DIR="${BASE_STORAGE}/.cache-v2"
     mkdir -p "$CACHE_DIR"
-    oc-mirror --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}" --v2
+    oc-mirror --v2 --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}"
 else
     # v1 manages its own workspace. 
     V1_WORKSPACE="${BASE_STORAGE}/.workspace-v1"
     mkdir -p "$V1_WORKSPACE"
     
     pushd "$V1_WORKSPACE" > /dev/null
-    oc-mirror --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
+    oc-mirror --v1 --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
     popd > /dev/null
 fi
 
