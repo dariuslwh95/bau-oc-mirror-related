@@ -51,7 +51,7 @@ else
     
     pushd "$V1_WORKSPACE" > /dev/null
     # v1 requires file:/// (three slashes) for absolute paths
-    oc-mirror --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
+    oc-mirror --v1 --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
     
     # RETAIN V1 LOG: Naming convention <ISC_NAME>-<DATE>.log
     if [ -f ".oc-mirror.log" ]; then
