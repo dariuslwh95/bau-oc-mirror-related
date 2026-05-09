@@ -79,7 +79,6 @@ aws s3 sync /mnt/mirror-data/output/ s3://your-mirror-bucket/ --exclude "*" --in
 
 ## 📝 Key Considerations
 
-* **OC-Mirror v2:** Optimized for v2, which utilizes a local registry service during the mirror process.
 * **CPU Credits:** Monitor T3 instance CPU credits during 4-hour+ runs to avoid performance throttling.
 * **Disk Space:** Periodically check usage on the 4TB volume: `df -h /mnt/mirror-data`.
 * **IDMS/ITMS:** Cluster resources (ImageDigestMirrorSets) are generated within the working directory and bundled inside the `00001.tar` files.

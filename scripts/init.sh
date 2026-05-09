@@ -10,28 +10,66 @@ set -e
 
 echo "=== Starting OCP Mirror Node Setup ==="
 
-# 1. Disk Management
+This is a solid starting point, but we need to make it more robust for Nitro-based instances (like your t3.large), where device names can be unpredictable.
+
+The following update handles the logic of finding the disk, formatting it (only if empty), and safely appending the UUID to /etc/fstab to ensure it persists across reboots.
+
+Bash
+# 1. Disk Management & Persistence
+echo "Starting Disk Management..."
+
+# Wait for the EBS volume to appear (Checking for common Nitro and Legacy names)
 while [ ! -b /dev/sdh ] && [ ! -b /dev/nvme1n1 ]; do 
     echo "Waiting for EBS volume to attach..."
     sleep 5 
 done
 
-# Nitro instances use NVMe names. This finds the non-root disk.
-DEVICE=$(lsblk -rno NAME,MOUNTPOINT | awk '$2=="" {print "/dev/"$1}' | grep -v "nvme0n1" | head -n1)
+# Nitro instances use NVMe names. This finds the 4TB disk that isn't mounted.
+# We exclude the root disk (usually nvme0n1) and find the first available block device.
+DEVICE=$(lsblk -rno NAME,MOUNTPOINT,SIZE | awk '$2=="" && $3~/[3-4]T/ {print "/dev/"$1}' | head -n1)
 
-if [ -z "$(lsblk -fno FSTYPE $DEVICE)" ]; then
-    echo "Formatting $DEVICE with XFS..."
-    mkfs -t xfs $DEVICE
+if [ -z "$DEVICE" ]; then
+    echo "❌ Error: Could not find an unmounted ~4TB device."
+    exit 1
 fi
 
-mkdir -p $MOUNT_PATH
-mount $DEVICE $MOUNT_PATH
-echo "EBS Volume mounted at $MOUNT_PATH"
+# Format with XFS if no filesystem exists
+if [ -z "$(lsblk -fno FSTYPE $DEVICE)" ]; then
+    echo "Formatting $DEVICE with XFS..."
+    sudo mkfs -t xfs $DEVICE
+else
+    echo "Filesystem already exists on $DEVICE, skipping format."
+fi
+
+# Create mount point and mount the device
+sudo mkdir -p $MOUNT_PATH
+sudo mount $DEVICE $MOUNT_PATH
+
+# 2. Permanent Persistence via /etc/fstab
+echo "Ensuring volume persists after reboot..."
+
+# Get the UUID of the device
+UUID=$(blkid -s UUID -o value $DEVICE)
+
+# Backup fstab before modifying
+sudo cp /etc/fstab /etc/fstab.bak
+
+# Append to /etc/fstab if not already present
+if ! grep -q "$UUID" /etc/fstab; then
+    echo "Adding UUID=$UUID to /etc/fstab"
+    # defaults,nofail ensures the system still boots if the disk is detached
+    echo "UUID=$UUID  $MOUNT_PATH  xfs  defaults,nofail  0  2" | sudo tee -a /etc/fstab
+    echo "✅ Persistence configured."
+else
+    echo "ℹ️ UUID already exists in /etc/fstab. Skipping."
+fi
+
+echo "EBS Volume mounted and persisted at $MOUNT_PATH"
 
 # 2. Dependencies
 echo "Installing base tools..."
 # Added 'unzip' as it is required for AWS CLI installation
-dnf install -y podman git tar unzip
+dnf install -y podman git tar unzip tmux
 
 # 3. AWS CLI Installation
 echo "Installing AWS CLI v2..."
