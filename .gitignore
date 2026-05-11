@@ -22,3 +22,5 @@ crash.*.log
 # Ignore CLI configuration
 .terraformrc
 terraform.rc
+
+/errors

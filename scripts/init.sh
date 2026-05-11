@@ -69,7 +69,7 @@ echo "EBS Volume mounted and persisted at $MOUNT_PATH"
 # 2. Dependencies
 echo "Installing base tools..."
 # Added 'unzip' as it is required for AWS CLI installation
-dnf install -y podman git tar unzip tmux
+dnf install -y podman git tar unzip tmux tree
 
 # 3. AWS CLI Installation
 echo "Installing AWS CLI v2..."

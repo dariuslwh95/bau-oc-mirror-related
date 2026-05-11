@@ -1,8 +1,6 @@
 #!/bin/bash
 
 # --- Configuration ---
-# Resolves the absolute path of the directory where the script is located, 
-# then goes up one level to the repo root.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_BASE="$(dirname "$SCRIPT_DIR")"
 
@@ -23,10 +21,11 @@ BASE_NAME=$(basename "$ISC_FILE" .yaml)
 
 # Set Version-Specific Paths
 DEST_DIR="${BASE_STORAGE}/output-${MIRROR_VER}/${BASE_NAME}-${DATE_SUFFIX}"
+CHECKSUM_FILE_NAME="${BASE_NAME}-${DATE_SUFFIX}.txt"
+CHECKSUM_PATH="${DEST_DIR}/${CHECKSUM_FILE_NAME}"
 
 if [ ! -f "$ISC_PATH" ]; then
     echo "ERROR: File not found: $ISC_PATH"
-    echo "Make sure your YAML is in: $INBOX_DIR"
     exit 1
 fi
 
@@ -36,24 +35,22 @@ mkdir -p "$TMP_WORK_DIR" "$DEST_DIR"
 
 echo "=========================================================="
 echo "STARTING MIRROR ($MIRROR_VER): $ISC_FILE"
-echo "REPO_BASE: $REPO_BASE"
 echo "=========================================================="
 
+# Copy the ISC YAML into the output folder for retention
+cp "$ISC_PATH" "${DEST_DIR}/${ISC_FILE}"
+
 if [ "$MIRROR_VER" == "v2" ]; then
-    # v2 uses the explicit --cache-dir flag
     CACHE_DIR="${BASE_STORAGE}/.cache-v2"
     mkdir -p "$CACHE_DIR"
     oc-mirror --v2 --config "$ISC_PATH" --cache-dir "$CACHE_DIR" "file://${TMP_WORK_DIR}"
 else
-    # v1 manages its own workspace.
     V1_WORKSPACE="${BASE_STORAGE}/.workspace-v1"
     mkdir -p "$V1_WORKSPACE"
     
     pushd "$V1_WORKSPACE" > /dev/null
-    # v1 requires file:/// (three slashes) for absolute paths
     oc-mirror --v1 --config "$ISC_PATH" "file://${TMP_WORK_DIR}"
     
-    # RETAIN V1 LOG: Naming convention <ISC_NAME>-<DATE>.log
     if [ -f ".oc-mirror.log" ]; then
         mv ".oc-mirror.log" "${DEST_DIR}/${BASE_NAME}-${DATE_SUFFIX}.log"
     fi
@@ -63,37 +60,37 @@ fi
 STATUS=$?
 
 if [ $STATUS -eq 0 ]; then
-    echo "oc-mirror succeeded. Processing chunks..."
+    echo "oc-mirror succeeded. Generating checksums..."
     
-    CHUNK_COUNT=1
-    # Find all tarballs (v1: mirror_seqX.tar | v2: XXXXX.tar)
+    # Initialize/Clear the manifest file
+    > "$CHECKSUM_PATH"
+
+    # Find archives, move them to DEST_DIR, and hash them
     find "$TMP_WORK_DIR" -type f -name "*.tar" | sort | while read -r FILE; do
+        TAR_FILENAME=$(basename "$FILE")
         
-        FINAL_TAR="${DEST_DIR}/${BASE_NAME}-${MIRROR_VER}-chunk${CHUNK_COUNT}.tar"
+        echo "Processing $TAR_FILENAME..."
         
-        echo "Moving Chunk: $(basename "$FINAL_TAR")"
-        mv "$FILE" "$FINAL_TAR"
+        # Move the file from tmp to final destination using original name
+        mv "$FILE" "${DEST_DIR}/${TAR_FILENAME}"
         
-        echo "Generating Checksum..."
-        sha256sum "$FINAL_TAR" | awk '{print $1}' > "${FINAL_TAR}.sha256"
-        
-        ((CHUNK_COUNT++))
+        # Calculate MD5 and append to manifest
+        (cd "$DEST_DIR" && md5sum "$TAR_FILENAME" >> "$CHECKSUM_FILE_NAME")
     done
 
-    # Cleanup temporary layout
+    # Clean up the empty temporary directory
     rm -rf "$TMP_WORK_DIR"
     
     echo "=========================================================="
-    echo "COMPLETE: Files and Logs ready for S3 sync"
+    echo "COMPLETE"
+    echo "Folder content: Original Tarballs, Logs, ISC.yaml, and Checksums"
+    echo "Manifest: $CHECKSUM_PATH"
     echo "Location: $DEST_DIR"
-    echo "Next: aws s3 sync ${BASE_STORAGE}/output-${MIRROR_VER}/ s3://YOUR-BUCKET/mirrors/output-${MIRROR_VER}/"
     echo "=========================================================="
 else
-    # Rescue v1 log even on failure for troubleshooting
     if [ "$MIRROR_VER" == "v1" ] && [ -f "${V1_WORKSPACE}/.oc-mirror.log" ]; then
         cp "${V1_WORKSPACE}/.oc-mirror.log" "${DEST_DIR}/${BASE_NAME}-${DATE_SUFFIX}-FAILED.log"
     fi
     echo "ERROR: Mirror failed with exit code $STATUS."
-    echo "Data preserved in $TMP_WORK_DIR"
     exit $STATUS
 fi
