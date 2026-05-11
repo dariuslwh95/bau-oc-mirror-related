@@ -1,10 +1,13 @@
 kind: ImageSetConfiguration
 apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 10
+storageConfig:
+  local:
+    path: /mnt/mirror-data/4.20-openshift-ai-p1-metadata
 mirror:
   operators:
   - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
-    targetCatalog: redhat/redhat-oai-operator-index
+    targetCatalog: redhat/redhat-oai-operator-index-p1
     targetTag: v4.20-1
     packages:
     - name: rhods-operator
@@ -53,40 +56,3 @@ mirror:
       defaultChannel: stable-v1.0
       channels:
       - name: stable-v1.0
-    - name: sriov-network-operator
-      defaultChannel: stable
-      channels:
-      - name: stable
-        minVersion: 4.20.0-202604140241
-        maxVersion: 4.20.0-202604140241
-    - name: opentelemetry-product
-      defaultChannel: stable
-      channels:
-      - name: stable
-        minVersion: 0.144.0-2
-        maxVersion: 0.144.0-2
-    - name: tempo-product
-      defaultChannel: stable
-      channels:
-      - name: stable
-        minVersion: 0.20.0-3
-        maxVersion: 0.20.0-3    
-    - name: cluster-observability-operator
-      defaultChannel: stable
-      channels:
-      - name: stable
-        minVersion: 1.4.0
-        maxVersion: 1.4.0
-    - name: authorino-operator
-      defaultChannel: stable
-      channels:
-      - name: stable
-        minVersion: 1.3.0
-        maxVersion: 1.3.0
-    - name: serverless-operator
-      defaultChannel: stable-1.37
-      channels:
-      - name: stable-1.37
-        minVersion: 1.37.1
-        maxVersion: 1.37.1
-
