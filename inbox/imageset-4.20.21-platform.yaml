@@ -1,0 +1,11 @@
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 10
+mirror:
+  platform:
+    channels:
+    - name: fast-4.20
+      type: ocp
+      minVersion: 4.20.21
+      maxVersion: 4.20.21
+    graph: false
