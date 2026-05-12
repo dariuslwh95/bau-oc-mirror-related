@@ -5,7 +5,7 @@ import sys
 
 # Replace these variables to match your environment
 STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
-CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
+# CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
 MAX_RETRY_COUNT = 20
 
 def is_tar_file_created():
@@ -26,7 +26,7 @@ def run_mirroring(isc_path):
     # Added --cache-dir and redirecting both stdout and stderr to the log file
     mirror_command = (
         f"oc-mirror --v1 --config={isc_path} "
-        f"file://{STORAGE_PATH} --cache-dir={CACHE_DIR} "
+        f"file://{STORAGE_PATH}" # --cache-dir={CACHE_DIR} "
         f"--log-level=debug > {log_file_path} 2>&1"
     )
     
