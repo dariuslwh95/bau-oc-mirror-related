@@ -21,8 +21,8 @@ resource "aws_security_group" "ssm_only" {
 
 # 4. Define the persistent EBS Volume (unchanged)
 resource "aws_ebs_volume" "ocp_cache" {
-  availability_zone = "ap-southeast-1a" # Ensure this matches your data source AZ
-  size              = 4000
+  availability_zone = "ap-southeast-1a"
+  size              = 1000 # Reduced to 1TB [cite: 2]
   type              = "gp3"
   
   lifecycle {
@@ -95,6 +95,12 @@ data "aws_ami" "rhel_latest" {
 resource "aws_instance" "mirror_worker" {
   ami           = data.aws_ami.rhel_latest.id
   instance_type = "t3.large"
+
+  root_block_device {
+    volume_size           = 300   # Increased to 300GB
+    volume_type           = "gp3"
+    delete_on_termination = true  # Set to false if you want the 300GB disk to persist
+  }
   
   # --- CHANGE THIS LINE ---
   # Reference the resource defined in your vpc.tf
