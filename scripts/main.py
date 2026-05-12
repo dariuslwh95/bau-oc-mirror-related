@@ -3,13 +3,13 @@ import re
 import subprocess
 import sys
 
-# Replace these variables to match your environment
+# Constants for your 1TB EBS volume
 STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
-# CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
+CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
 MAX_RETRY_COUNT = 20
 
 def is_tar_file_created():
-    """Checks if any .tar file exists in the storage path."""
+    """Checks for .tar files on the 1TB EBS volume."""
     if not os.path.exists(STORAGE_PATH):
         return False
     storage_path_contents = os.listdir(STORAGE_PATH)
@@ -19,39 +19,41 @@ def is_tar_file_created():
     return False
 
 def run_mirroring(isc_path):
-    # Log file will be saved directly to your 1TB EBS volume
+    # Log file resides on the 1TB persistent storage
     log_file_path = os.path.join(STORAGE_PATH, "oc-mirror-execution.log")
     
-    # Constructing the command
-    # Added --cache-dir and redirecting both stdout and stderr to the log file
+    # We use 'tee' to split the output to both STDOUT and the Log File
+    # '2>&1' ensures errors are caught in the log as well
     mirror_command = (
         f"oc-mirror --v1 --config={isc_path} "
-        f"file://{STORAGE_PATH}" # --cache-dir={CACHE_DIR} "
-        f"--log-level=debug > {log_file_path} 2>&1"
+        f"file://{STORAGE_PATH} --cache-dir={CACHE_DIR} "
+        f"--log-level=debug 2>&1 | tee {log_file_path}"
     )
     
-    print(f"Running mirror with config: {isc_path}")
-    print(f"Logs will be written to: {log_file_path}")
+    print(f"--- Initialization ---")
+    print(f"Config: {isc_path}")
+    print(f"Storage: {STORAGE_PATH}")
+    print(f"Log: {log_file_path}")
 
+    # Ensure the directory exists before writing
     if not os.path.exists(STORAGE_PATH):
         os.makedirs(STORAGE_PATH)
 
     for retry_count in range(1, MAX_RETRY_COUNT + 1):
-        print(f"Download attempt {retry_count}...")
+        print(f"\n--- Download Attempt {retry_count} ---")
         
-        # subprocess.run will wait for the command to finish
+        # subprocess.run with shell=True executes the tee command
         subprocess.run(mirror_command, shell=True, executable="/bin/bash")
         
         if is_tar_file_created():
-            print(f"✅ Mirroring completed with {retry_count} retries.")
+            print(f"\n✅ SUCCESS: Mirroring completed after {retry_count} attempts.")
             return
             
-        print(f"⚠️ Attempt {retry_count} failed. Retrying...")
+        print(f"\n⚠️ WARNING: Attempt {retry_count} failed to create tarballs. Retrying...")
 
-    print("❌ Mirroring failed after maximum retries.")
+    print("\n❌ CRITICAL: Mirroring failed after maximum retries.")
 
 def main():
-    # Check if the user provided the ISC path as an argument
     if len(sys.argv) < 2:
         print("Usage: python3 main.py <path_to_imageset_config.yaml>")
         sys.exit(1)
