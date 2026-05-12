@@ -26,7 +26,7 @@ def run_mirroring(isc_path):
     # '2>&1' ensures errors are caught in the log as well
     mirror_command = (
         f"oc-mirror --v1 --config={isc_path} "
-        f"file://{STORAGE_PATH} --cache-dir={CACHE_DIR} "
+        f"file://{STORAGE_PATH}" # --cache-dir={CACHE_DIR} "
         f"--log-level=debug 2>&1 | tee {log_file_path}"
     )
     
