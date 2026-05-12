@@ -5,7 +5,7 @@ import sys
 
 # Constants for your 1TB EBS volume
 STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
-CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
+# CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
 MAX_RETRY_COUNT = 20
 
 def is_tar_file_created():
