@@ -23,7 +23,7 @@ The solution utilizes a RHEL 9 EC2 Instance (`t3.large`) equipped with a 4TB per
 ├── infra/              # Terraform code (EC2, VPC, IAM, EBS)
 ├── scripts/
 │   ├── init.sh         # User-data script (installs oc, oc-mirror, aws-cli)
-│   ├── mirror-single.sh# Core script to process a single ISC from inbox
+│   ├── main.py         # Core script to process a single ISC from inbox
 │   └── push-to-s3.sh   # Automation to sync local tarballs to S3
 └── ref/                # Reference samples and metadata
 

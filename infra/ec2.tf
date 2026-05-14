@@ -94,7 +94,7 @@ data "aws_ami" "rhel_latest" {
 # 6. Updated EC2 Instance
 resource "aws_instance" "mirror_worker" {
   ami           = data.aws_ami.rhel_latest.id
-  instance_type = "t3.large"
+  instance_type = "t3.xlarge"
 
   root_block_device {
     volume_size           = 300   # Increased to 300GB

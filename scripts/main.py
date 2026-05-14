@@ -2,50 +2,53 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 # Constants for your 1TB EBS volume
-STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
-# CACHE_DIR = "/mnt/mirror-data/oc-mirror-cache"
+BASE_STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
 MAX_RETRY_COUNT = 20
 
-def is_tar_file_created():
-    """Checks for .tar files on the 1TB EBS volume."""
-    if not os.path.exists(STORAGE_PATH):
+def is_tar_file_created(storage_path):
+    """Checks for .tar files in the specific ISC storage path."""
+    if not os.path.exists(storage_path):
         return False
-    storage_path_contents = os.listdir(STORAGE_PATH)
+    storage_path_contents = os.listdir(storage_path)
     for content in storage_path_contents:
         if re.search(r".tar$", content):
             return True
     return False
 
 def run_mirroring(isc_path):
-    # Log file resides on the 1TB persistent storage
-    log_file_path = os.path.join(STORAGE_PATH, "oc-mirror-execution.log")
+    # 1. Extract the name without .yaml (e.g., 'imageset-4.20-operators')
+    isc_name = Path(isc_path).stem
     
-    # We use 'tee' to split the output to both STDOUT and the Log File
-    # '2>&1' ensures errors are caught in the log as well
-    mirror_command = (
-        f"oc-mirror --v1 --config={isc_path} "
-        f"file://{STORAGE_PATH} 2>&1 | tee {log_file_path}"
-    )
+    # 2. Create a dedicated sub-directory for this specific mirror run
+    specific_storage_path = os.path.join(BASE_STORAGE_PATH, isc_name)
+    log_file_path = os.path.join(specific_storage_path, "oc-mirror-execution.log")
     
     print(f"--- Initialization ---")
     print(f"Config: {isc_path}")
-    print(f"Storage: {STORAGE_PATH}")
+    print(f"Output Directory: {specific_storage_path}")
     print(f"Log: {log_file_path}")
 
-    # Ensure the directory exists before writing
-    if not os.path.exists(STORAGE_PATH):
-        os.makedirs(STORAGE_PATH)
+    # Ensure the dedicated directory exists
+    if not os.path.exists(specific_storage_path):
+        os.makedirs(specific_storage_path)
 
+    # 3. Update the command to use the new specific_storage_path
+    mirror_command = (
+        f"oc-mirror --v1 --config={isc_path} "
+        f"file://{specific_storage_path} 2>&1 | tee {log_file_path}"
+    )
+    
     for retry_count in range(1, MAX_RETRY_COUNT + 1):
         print(f"\n--- Download Attempt {retry_count} ---")
         
-        # subprocess.run with shell=True executes the tee command
         subprocess.run(mirror_command, shell=True, executable="/bin/bash")
         
-        if is_tar_file_created():
+        if is_tar_file_created(specific_storage_path):
             print(f"\n✅ SUCCESS: Mirroring completed after {retry_count} attempts.")
+            # Optional: Add S3 upload call here
             return
             
         print(f"\n⚠️ WARNING: Attempt {retry_count} failed to create tarballs. Retrying...")
