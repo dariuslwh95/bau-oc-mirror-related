@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 # Constants for your 1TB EBS volume
-BASE_STORAGE_PATH = "/mnt/mirror-data/gaia-operators"
+BASE_STORAGE_PATH = "/mnt/mirror-data"
 MAX_RETRY_COUNT = 20
 
 def is_tar_file_created(storage_path):
