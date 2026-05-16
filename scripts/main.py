@@ -1,10 +1,11 @@
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-# Constants for your 1TB EBS volume
+# Constants for your EBS volume
 BASE_STORAGE_PATH = "/mnt/mirror-data"
 MAX_RETRY_COUNT = 20
 
@@ -14,12 +15,12 @@ def is_tar_file_created(storage_path):
         return False
     storage_path_contents = os.listdir(storage_path)
     for content in storage_path_contents:
-        if re.search(r".tar$", content):
+        if re.search(r"\.tar$", content):
             return True
     return False
 
 def run_mirroring(isc_path):
-    # 1. Extract the name without .yaml (e.g., 'imageset-4.20-operators')
+    # 1. Extract the name without .yaml (e.g., 'imageset-4.16.61-platform')
     isc_name = Path(isc_path).stem
     
     # 2. Create a dedicated sub-directory for this specific mirror run
@@ -48,7 +49,25 @@ def run_mirroring(isc_path):
         
         if is_tar_file_created(specific_storage_path):
             print(f"\n✅ SUCCESS: Mirroring completed after {retry_count} attempts.")
-            # Optional: Add S3 upload call here
+            
+            # --- Post-Success Processing ---
+            print(f"\n--- Post-Mirror Processing ---")
+            
+            # Copy the ISC YAML config file into the folder
+            copied_isc_path = os.path.join(specific_storage_path, os.path.basename(isc_path))
+            print(f"Copying configuration file to: {copied_isc_path}")
+            shutil.copy2(isc_path, copied_isc_path)
+            
+            # Quick native shell checksum generation matching exactly what you specified
+            checksum_filename = f"{isc_name}-checksum.txt"
+            checksum_command = f"md5sum *.tar > {checksum_filename}"
+            print(f"Executing: {checksum_command}")
+            
+            # cwd=specific_storage_path ensures the command runs inside the output folder
+            subprocess.run(checksum_command, shell=True, cwd=specific_storage_path, executable="/bin/bash")
+            
+            print(f"✅ Checksums written to: {os.path.join(specific_storage_path, checksum_filename)}")
+            print(f"\nAll artifacts safely stored in {specific_storage_path}")
             return
             
         print(f"\n⚠️ WARNING: Attempt {retry_count} failed to create tarballs. Retrying...")
