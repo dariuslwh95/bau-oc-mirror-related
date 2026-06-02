@@ -45,6 +45,8 @@ terraform apply
 1. Connect to the instance via **AWS SSM (Session Manager)**.
 2. Ensure your OpenShift Pull Secret is formatted as a valid JSON and placed at `~/.docker/config.json`.
 
+pull secret taken from local
+
 ### 3. Run a Mirror Task
 
 Place your **ImageSetConfiguration (ISC)** YAML in the `inbox/` directory. It is highly recommended to use `screen` or `tmux` for long-running mirrors.

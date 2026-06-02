@@ -87,6 +87,36 @@ if ! systemctl is-active --quiet amazon-ssm-agent; then
     systemctl start amazon-ssm-agent
 fi
 
+# 7. OpenShift Pull Secret Setup
+echo "=== Configuring OpenShift Pull Secret ==="
+
+USER_HOME=$(eval echo ~$TARGET_USER)
+ROOT_DOCKER_DIR="/root/.docker"
+USER_DOCKER_DIR="$USER_HOME/.docker"
+
+mkdir -p "$ROOT_DOCKER_DIR"
+mkdir -p "$USER_DOCKER_DIR"
+
+# Terraform substitutes ${pull_secret_contents} with raw text on deployment
+cat << 'EOF' > /tmp/raw-pull-secret.txt
+${pull_secret_contents}
+EOF
+
+# Process, compact, validate and apply permissions via jq
+if jq -e . /tmp/raw-pull-secret.txt >/dev/null 2>&1; then
+    jq -c . /tmp/raw-pull-secret.txt > "$ROOT_DOCKER_DIR/config.json"
+    jq -c . /tmp/raw-pull-secret.txt > "$USER_DOCKER_DIR/config.json"
+    
+    chown -R "$TARGET_USER:$TARGET_USER" "$USER_DOCKER_DIR"
+    chmod 600 "$ROOT_DOCKER_DIR/config.json" "$USER_DOCKER_DIR/config.json"
+    
+    rm -f /tmp/raw-pull-secret.txt
+    echo "✅ Pull secret successfully written to root and $TARGET_USER environments."
+else
+    echo "❌ Error: The injected pull-secret text was not valid JSON."
+    exit 1
+fi
+
 echo "=== Installation Complete ==="
 python3 --version
 aws --version

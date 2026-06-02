@@ -24,10 +24,6 @@ resource "aws_ebs_volume" "ocp_cache" {
   availability_zone = "ap-southeast-1a"
   size              = 1000 # Reduced to 1TB [cite: 2]
   type              = "gp3"
-  
-  lifecycle {
-    prevent_destroy = true 
-  }
 
   tags = { Name = "oc-mirror-persistent-cache" }
 }
@@ -113,9 +109,13 @@ resource "aws_instance" "mirror_worker" {
 
   iam_instance_profile        = aws_iam_instance_profile.ssm_profile.name
 
+# --- UPDATED USER_DATA TEMPLATE ---
+  # Assuming pull-secret.txt is located in your root Terraform directory.
+  # Adjust path (e.g., "${path.module}/../pull-secret.txt") if located elsewhere.
   user_data = templatefile("../scripts/init.sh", {
-    ebs_device = "/dev/sdh"
-    mount_path = "/mnt/mirror-data"
+    ebs_device           = "/dev/sdh"
+    mount_path           = "/mnt/mirror-data"
+    pull_secret_contents = file("${path.module}/pull-secret.txt")
   })
 
   tags = { Name = "oc-mirror-worker" }
