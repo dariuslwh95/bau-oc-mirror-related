@@ -3,6 +3,7 @@
 # secrets
 .env
 */pull-secret.txt
+*/config.json
 
 # Local .terraform folder (contains provider binaries)
 .terraform/

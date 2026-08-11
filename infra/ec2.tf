@@ -88,7 +88,7 @@ data "aws_ami" "rhel_latest" {
 }
 
 locals {
-  pull_secret_content = file("${path.module}/pull-secret.txt")
+  pull_secret_content = file("${path.module}/config.json")
 }
 
 # 6. Updated EC2 Instance
