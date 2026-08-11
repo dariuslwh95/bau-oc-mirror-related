@@ -87,6 +87,10 @@ data "aws_ami" "rhel_latest" {
   }
 }
 
+locals {
+  pull_secret_content = file("${path.module}/pull-secret.txt")
+}
+
 # 6. Updated EC2 Instance
 resource "aws_instance" "mirror_worker" {
   ami           = data.aws_ami.rhel_latest.id
@@ -115,7 +119,7 @@ resource "aws_instance" "mirror_worker" {
   user_data = templatefile("../scripts/init.sh", {
     ebs_device           = "/dev/sdh"
     mount_path           = "/mnt/mirror-data"
-    pull_secret_contents = file("${path.module}/pull-secret.txt")
+    docker_pull_secret   = local.pull_secret_content
   })
 
   tags = { Name = "oc-mirror-worker" }

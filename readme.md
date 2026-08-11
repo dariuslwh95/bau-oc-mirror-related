@@ -56,7 +56,7 @@ Place your **ImageSetConfiguration (ISC)** YAML in the `inbox/` directory. It is
 screen -S ocmirror
 
 # Run the mirror for a specific ISC
-./scripts/mirror-to-disk.sh inbox/imageset-4.20-operators-250426.yaml
+./scripts/main.py ./inbox/imageset-4.20-operators-250426.yaml
 
 ```
 

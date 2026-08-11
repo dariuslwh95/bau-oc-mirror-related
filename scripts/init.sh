@@ -2,6 +2,7 @@
 # Variables injected by Terraform
 MOUNT_PATH="${mount_path}"
 BASE_URL="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients"
+DOCKER_PULL_SECRET="${docker_pull_secret}"
 
 # Logs for debugging (View via: cat /var/log/user-data.log)
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
@@ -42,6 +43,20 @@ fi
 sudo mkdir -p $MOUNT_PATH
 sudo mount $DEVICE $MOUNT_PATH
 
+# === ADD THIS TO FIX PERMISSIONS PERMANENTLY ===
+# Grant ownership to ec2-user, ssm-user, and any user in those groups
+# First, ensure the ssm-user group/user exists (SSM agent creates it)
+if id "ssm-user" &>/dev/null; then
+    sudo chown -R ssm-user:ssm-user $MOUNT_PATH
+else
+    # Fallback to ec2-user if SSM agent hasn't initialized the user yet
+    sudo chown -R ec2-user:ec2-user $MOUNT_PATH
+fi
+
+sudo chmod 775 $MOUNT_PATH
+
+echo "✅ Mount path permissions aligned for automation users."
+
 # 2. Permanent Persistence via /etc/fstab
 echo "Ensuring volume persists after reboot..."
 UUID=$(blkid -s UUID -o value $DEVICE)
@@ -57,6 +72,11 @@ fi
 echo "Installing base tools and Python..."
 # Added python3 and python3-pip for your automation needs
 dnf install -y podman git tar unzip tmux tree python3 python3-pip
+
+# Configure Docker with the pull secret
+mkdir -p /home/ec2-user/.docker
+echo "${DOCKER_PULL_SECRET}" > /home/ec2-user/.docker/config.json
+echo "✅ Docker configured with pull secret."
 
 # 4. AWS CLI Installation
 echo "Installing AWS CLI v2..."
@@ -85,36 +105,6 @@ if ! systemctl is-active --quiet amazon-ssm-agent; then
     dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
     systemctl enable amazon-ssm-agent
     systemctl start amazon-ssm-agent
-fi
-
-# 7. OpenShift Pull Secret Setup
-echo "=== Configuring OpenShift Pull Secret ==="
-
-USER_HOME=$(eval echo ~$TARGET_USER)
-ROOT_DOCKER_DIR="/root/.docker"
-USER_DOCKER_DIR="$USER_HOME/.docker"
-
-mkdir -p "$ROOT_DOCKER_DIR"
-mkdir -p "$USER_DOCKER_DIR"
-
-# Terraform substitutes ${pull_secret_contents} with raw text on deployment
-cat << 'EOF' > /tmp/raw-pull-secret.txt
-${pull_secret_contents}
-EOF
-
-# Process, compact, validate and apply permissions via jq
-if jq -e . /tmp/raw-pull-secret.txt >/dev/null 2>&1; then
-    jq -c . /tmp/raw-pull-secret.txt > "$ROOT_DOCKER_DIR/config.json"
-    jq -c . /tmp/raw-pull-secret.txt > "$USER_DOCKER_DIR/config.json"
-    
-    chown -R "$TARGET_USER:$TARGET_USER" "$USER_DOCKER_DIR"
-    chmod 600 "$ROOT_DOCKER_DIR/config.json" "$USER_DOCKER_DIR/config.json"
-    
-    rm -f /tmp/raw-pull-secret.txt
-    echo "✅ Pull secret successfully written to root and $TARGET_USER environments."
-else
-    echo "❌ Error: The injected pull-secret text was not valid JSON."
-    exit 1
 fi
 
 echo "=== Installation Complete ==="

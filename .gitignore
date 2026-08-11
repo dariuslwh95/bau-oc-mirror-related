@@ -2,7 +2,7 @@
 
 # secrets
 .env
-pull-secret.txt
+*/pull-secret.txt
 
 # Local .terraform folder (contains provider binaries)
 .terraform/
