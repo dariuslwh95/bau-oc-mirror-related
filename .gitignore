@@ -26,3 +26,5 @@ terraform.rc
 
 /errors
 infra/.terraform.lock.hcl
+
+.oc-mirror.log

@@ -177,3 +177,21 @@ If a process fails, you might need to clean up the output directory for that spe
 
 3.  **Resume Work:**
     Always resume inside a `tmux` or `screen` session to prevent disconnects from killing the `oc-mirror` process.
+
+## oc-mirror and OPM Examples
+
+```bash
+oc-mirror --v1 list operators --catalog=registry.redhat.io/redhat/redhat-operator-index:v4.20
+
+oc-mirror --v1 list operators --catalog=registry.redhat.io/redhat/redhat-operator-index:v4.20 --package=rhods-operator
+NAME            DISPLAY NAME  DEFAULT CHANNEL
+rhods-operator                stable-3.x
+
+PACKAGE         CHANNEL                       HEAD
+rhods-operator  3.2-exception-support         rhods-operator.3.2.1
+rhods-operator  alpha                         rhods-operator.2.25.10
+
+opm render registry.redhat.io/redhat/redhat-operator-index:v4.20 | \
+jq -r 'select(.package == "authorino-operator" and .schema == "olm.channel") | 
+"Package: \(.package) | Channel: \(.name) | Head: \(.entries[-1].name)"'
+```

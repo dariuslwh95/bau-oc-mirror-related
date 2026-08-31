@@ -1,0 +1,91 @@
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+archiveSize: 10
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
+    targetCatalog: redhat/redhat-oai-operator-index
+    targetTag: v4.20-rhai-3.5
+    packages:
+    - name: rhods-operator
+      defaultChannel: stable-3.x
+      channels:
+      - name: stable-3.5
+        minVersion: 3.5.0
+        maxVersion: 3.5.0
+    - name: servicemeshoperator3
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 3.4.1
+        maxVersion: 3.4.1
+    - name: rhcl-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: "1.4.2"
+        maxVersion: "1.4.2"
+    - name: kueue-operator
+      defaultChannel: stable-v1.3
+      channels:
+      - name: stable-v1.4
+        minVersion: "1.4.1"
+        maxVersion: "1.4.1"
+    - name: job-set
+      defaultChannel: stable-v1.0
+      channels:
+      - name: stable-v1.0
+        minVersion: 1.0.0
+        maxVersion: 1.0.0
+    - name: openshift-custom-metrics-autoscaler-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: "2.19.0-2"
+        maxVersion: "2.19.0-2e"
+    - name: openshift-cert-manager-operator
+      defaultChannel: stable-v1
+      channels:
+      - name: stable-v1
+        minVersion: 1.20.0
+        maxVersion: 1.20.0
+    - name: leader-worker-set
+      defaultChannel: stable-v1.0
+      channels:
+      - name: stable-v1.0
+    - name: sriov-network-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 4.20.0-202608180108
+        maxVersion: 4.20.0-202608180108
+    - name: opentelemetry-product
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 0.152.0-3
+        maxVersion: 0.152.0-3
+    - name: tempo-product
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 0.21.0-3
+        maxVersion: 0.21.0-3
+    - name: cluster-observability-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 1.5.1
+        maxVersion: 1.5.1
+    - name: authorino-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 1.4.2
+        maxVersion: 1.4.2
+    - name: serverless-operator
+      defaultChannel: stable
+      channels:
+      - name: stable
+        minVersion: 1.37.1
+        maxVersion: 1.37.1
