@@ -2,7 +2,6 @@
 # Variables injected by Terraform
 MOUNT_PATH="${mount_path}"
 BASE_URL="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients"
-DOCKER_PULL_SECRET="${docker_pull_secret}"
 
 # Logs for debugging (View via: cat /var/log/user-data.log)
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
@@ -43,23 +42,6 @@ fi
 sudo mkdir -p $MOUNT_PATH
 sudo mount $DEVICE $MOUNT_PATH
 
-# Grant access to ec2-user and ssm-user using ACLs
-echo "Installing ACL to set fine-grained permissions..."
-sudo dnf install -y acl
-
-# Set ownership to ec2-user, then use ACLs for additional access
-# This is a safer default than ssm-user
-sudo chown -R ec2-user:ec2-user $MOUNT_PATH
-sudo chmod -R 775 $MOUNT_PATH
-
-echo "Setting ACLs for ec2-user and ssm-user..."
-# -R for recursive, -n to skip mask recalculation, -m to modify
-# Grants rwx to ssm-user. ec2-user already has it via ownership.
-sudo setfacl -R -m u:ssm-user:rwx $MOUNT_PATH
-sudo setfacl -d -m u:ssm-user:rwx $MOUNT_PATH # Default for new files
-
-echo "✅ Mount path permissions aligned for automation users."
-
 # 2. Permanent Persistence via /etc/fstab
 echo "Ensuring volume persists after reboot..."
 UUID=$(blkid -s UUID -o value $DEVICE)
@@ -75,15 +57,6 @@ fi
 echo "Installing base tools and Python..."
 # Added python3 and python3-pip for your automation needs
 dnf install -y podman git tar unzip tmux tree python3 python3-pip
-
-# Configure Docker with the pull secret
-mkdir -p /home/ec2-user/.docker
-echo "${docker_pull_secret}" > /home/ec2-user/.docker/config.json
-echo "✅ Docker configured with pull secret."
-
-mkdir -p /home/ssm-user/.docker
-echo "${docker_pull_secret}" > /home/ssm-user/.docker/config.json
-echo "✅ Docker configured with pull secret."
 
 # 4. AWS CLI Installation
 echo "Installing AWS CLI v2..."
@@ -113,6 +86,7 @@ if ! systemctl is-active --quiet amazon-ssm-agent; then
     systemctl enable amazon-ssm-agent
     systemctl start amazon-ssm-agent
 fi
+
 
 echo "=== Installation Complete ==="
 python3 --version
