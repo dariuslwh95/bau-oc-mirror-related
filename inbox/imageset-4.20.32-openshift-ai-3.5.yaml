@@ -8,7 +8,7 @@ mirror:
     targetTag: v4.20-rhai-3.5
     packages:
     - name: rhods-operator
-      defaultChannel: stable-3.x
+      defaultChannel: stable-3.5
       channels:
       - name: stable-3.5
         minVersion: 3.5.0
@@ -26,7 +26,7 @@ mirror:
         minVersion: "1.4.2"
         maxVersion: "1.4.2"
     - name: kueue-operator
-      defaultChannel: stable-v1.3
+      defaultChannel: stable-v1.4
       channels:
       - name: stable-v1.4
         minVersion: "1.4.1"
